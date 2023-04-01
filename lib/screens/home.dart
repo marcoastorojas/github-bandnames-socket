@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import '../models/band.dart';
+import 'package:mi_segunda_aplicacion/models/get_band_response.dart';
+import 'package:mi_segunda_aplicacion/providers/bandas_provider.dart';
+import 'package:mi_segunda_aplicacion/providers/socket_provider.dart';
+import 'package:provider/provider.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -9,36 +12,35 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  List<Band> bandas = [
-    Band(id: '1', name: 'banda 1', votes: 120),
-    Band(id: '2', name: 'benda 2', votes: 12),
-    Band(id: '3', name: 'binda 3', votes: 434),
-    Band(id: '4', name: 'bonda 4', votes: 84),
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final provider = Provider.of<BandaProvider>(context);
+    final socketProvider = Provider.of<SocketProvider>(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('BandNames'),
         backgroundColor: Colors.white,
       ),
       body: ListView.builder(
-        itemBuilder: (context, index) => _bandTile(bandas[index]),
-        itemCount: bandas.length,
+        itemBuilder: (context, index) => _bandTile(provider.bandas[index]),
+        itemCount: provider.bandas.length,
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _addNewBand(),
+        onPressed: () => _addNewBand(socketProvider),
         elevation: 1,
         child: const Icon(Icons.add),
       ),
     );
   }
 
-  Widget _bandTile(Band banda) {
+  Widget _bandTile(Banda banda) {
+    final socketProvider = Provider.of<SocketProvider>(context);
     return Dismissible(
       key: Key(banda.id),
       direction: DismissDirection.startToEnd,
+      onDismissed: (direction) {
+        socketProvider.eliminarBanda(banda.id);
+      },
       background: Container(
         padding: const EdgeInsets.only(left: 10),
         color: Colors.red,
@@ -58,7 +60,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _addNewBand() {
+  void _addNewBand(SocketProvider provider) {
     final TextEditingController textController = TextEditingController();
 
     showDialog(
@@ -72,7 +74,7 @@ class _HomeScreenState extends State<HomeScreen> {
             actions: <Widget>[
               MaterialButton(
                 onPressed: () {
-                  _addBandToList(textController.text);
+                  _addBandToList(textController.text, provider);
                 },
                 elevation: 5,
                 textColor: Colors.blue,
@@ -92,12 +94,9 @@ class _HomeScreenState extends State<HomeScreen> {
         });
   }
 
-  void _addBandToList(String name) {
+  void _addBandToList(String name, SocketProvider provider) {
     if (name.length > 1) {
-      setState(() {
-        bandas.add(Band(id: DateTime.now().toString(), name: name, votes: 0));
-      });
-
+      provider.agregarBanda(name);
       Navigator.pop(context);
     }
   }
